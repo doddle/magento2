@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+  <table name="doddle_returns_order_sync_queue" resource="default" engine="innodb" comment="Doddle Returns order push queue">
+    <column xsi:type="int" name="sync_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Order sync queue ID"/>
+    <column xsi:type="int" name="order_id" padding="10" unsigned="true" nullable="false" identity="false" comment="Magento order ID"/>
+    <column xsi:type="varchar" name="status" nullable="false" length="255" default="pending" comment="Order push status"/>
+    <column xsi:type="smallint" name="fail_count" padding="5" unsigned="true" nullable="false" identity="false" default="0" comment="Count of failed attempts to sync"/>
+    <column xsi:type="text" name="doddle_order_id" nullable="true" comment="Location description"/>
+    <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Created at date"/>
+    <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated at date"/>
+    <constraint xsi:type="primary" referenceId="PRIMARY">
+      <column name="sync_id"/>
+    </constraint>
+    <constraint xsi:type="foreign" referenceId="DODDLE_RETURNS_ORDER_SYNC_QUEUE_ORDER_ID_SALES_ORDER_ENTITY_ID" table="doddle_returns_order_sync_queue" column="order_id" referenceTable="sales_order" referenceColumn="entity_id" onDelete="CASCADE"/>
+    <constraint xsi:type="unique" referenceId="DODDLE_RETURNS_ORDER_SYNC_QUEUE_ORDER_ID">
+      <column name="order_id"/>
+    </constraint>
+    <index referenceId="DODDLE_RETURNS_ORDER_SYNC_QUEUE_STATUS" indexType="btree">
+      <column name="status"/>
+    </index>
+  </table>
+</schema>

@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Doddle\Returns\Api\Data\OrderQueueInterface" type="Doddle\Returns\Model\OrderQueue" />
+    <preference for="Doddle\Returns\Api\OrderQueueRepositoryInterface" type="Doddle\Returns\Model\OrderQueueRepository" />
+    <preference for="Doddle\Returns\Api\ProductVariationListInterface" type="Doddle\Returns\Model\Product\VariationProvider" />
+    <preference for="Doddle\Returns\Api\Data\Product\VariationInterface" type="Doddle\Returns\Model\Product\Variation" />
+    <preference for="Doddle\Returns\Api\Data\Product\VariationAttributeInterface" type="Doddle\Returns\Model\Product\VariationAttribute" />
+
+    <virtualType name="DoddleReturnsLogger" type="Magento\Framework\Logger\Monolog">
+        <arguments>
+            <argument name="handlers" xsi:type="array">
+                <item name="alert" xsi:type="object">Doddle\Returns\Logger\Handler\AlertHandler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+
+    <type name="Doddle\Returns\Cron\OrderSyncQueue">
+        <arguments>
+            <argument name="logger" xsi:type="object">DoddleReturnsLogger</argument>
+        </arguments>
+    </type>
+</config>

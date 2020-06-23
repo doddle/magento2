@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="doddle" translate="label" sortOrder="400">
+            <label>Doddle</label>
+        </tab>
+        <section id="doddle_returns" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+            <label>Doddle Returns</label>
+            <tab>doddle</tab>
+            <resource>Doddle_Returns::config</resource>
+            <group id="api" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>API Credentials</label>
+                <field id="key" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>API Key</label>
+                </field>
+                <field id="secret" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>API Secret</label>
+                    <comment><![CDATA[Contact Doddle support if you do not yet have these credentials.]]></comment>
+                </field>
+                <field id="mode" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>API Mode</label>
+                    <source_model>Doddle\Returns\Model\Config\Source\ApiMode</source_model>
+                </field>
+                <field id="url_override"  translate="label comment" type="select" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Override API URLs</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment><![CDATA[Enable this if you need to manually update the API endpoints. Invalid configuration of these URLs can stop the Doddle module from functioning.]]></comment>
+                </field>
+                <field id="live_url" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Live API URL</label>
+                    <depends>
+                        <field id="url_override">1</field>
+                    </depends>
+                </field>
+                <field id="test_url" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Test API URL</label>
+                    <depends>
+                        <field id="url_override">1</field>
+                    </depends>
+                </field>
+                <field id="test" translate="button_label" sortOrder="70" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label/>
+                    <button_label>Test API Connection</button_label>
+                    <frontend_model>Doddle\Returns\Block\Adminhtml\System\Config\TestApiButton</frontend_model>
+                </field>
+            </group>
+            <group id="order_sync" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Order Sync</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="company_id" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Doddle Company ID</label>
+                </field>
+                <field id="batch_size" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Order Sync Batch Size</label>
+                    <source_model>Doddle\Returns\Model\Config\Source\ApiMode</source_model>
+                </field>
+                <field id="max_fails"  translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Order Sync Max Fail Attempts</label>
+                    <comment><![CDATA[Number of times to retry sending orders which have failed to send to Doddle previously. Set to "0" for unlimited attempts.]]></comment>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

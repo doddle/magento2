@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+    <group id="default">
+        <job name="doddle_returns_order_sync" instance="Doddle\Returns\Cron\OrderSyncQueue" method="processPendingOrders">
+            <schedule>*/5 * * * *</schedule>
+        </job>
+        <job name="doddle_returns_order_sync_retry" instance="Doddle\Returns\Cron\OrderSyncQueue" method="retryFailedOrders">
+            <schedule>*/5 * * * *</schedule>
+        </job>
+    </group>
+</config>

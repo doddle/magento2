@@ -1,0 +1,21 @@
+{
+    "doddle_returns_order_sync_queue": {
+        "column": {
+            "sync_id": true,
+            "order_id": true,
+            "status": true,
+            "fail_count": true,
+            "doddle_order_id": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "DODDLE_RETURNS_ORDER_SYNC_QUEUE_STATUS": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "DODDLE_RETURNS_ORDER_SYNC_QUEUE_ORDER_ID_SALES_ORDER_ENTITY_ID": true,
+            "DODDLE_RETURNS_ORDER_SYNC_QUEUE_ORDER_ID": true
+        }
+    }
+}

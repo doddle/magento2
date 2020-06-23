@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <doddle_returns>
+            <api>
+                <mode>test</mode>
+                <live_url>https://apigw.apac-prod.doddle.tech</live_url>
+                <test_url>https://apigw.apac-preprod.doddle.tech</test_url>
+            </api>
+            <order_sync>
+                <enabled>1</enabled>
+                <batch_size>10</batch_size>
+                <max_fails>5</max_fails>
+            </order_sync>
+        </doddle_returns>
+    </default>
+</config>

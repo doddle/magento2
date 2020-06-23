@@ -1,0 +1,15 @@
+{
+    "name": "doddle/magento2-returns",
+    "description": "Doddle Returns Magento2 module.",
+    "type": "magento2-module",
+    "version": "0.1.0",
+    "license": "proprietary",
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Doddle\\Returns\\": ""
+        }
+    }
+}

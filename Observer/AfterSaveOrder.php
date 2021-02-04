@@ -3,13 +3,19 @@ declare(strict_types=1);
 
 namespace Doddle\Returns\Observer;
 
-use Magento\Framework\Event\ObserverInterface;
 use Doddle\Returns\Api\Data\OrderQueueInterface;
 use Doddle\Returns\Api\Data\OrderQueueInterfaceFactory;
+use Doddle\Returns\Helper\Data as DataHelper;
 use Doddle\Returns\Model\OrderQueue;
+use Magento\Framework\Event\Observer;
+use Magento\Framework\Event\ObserverInterface;
+use Magento\Sales\Api\Data\OrderInterface;
 
 class AfterSaveOrder implements ObserverInterface
 {
+    /** @var DataHelper */
+    private $dataHelper;
+
     /** @var OrderQueueInterfaceFactory */
     private $orderQueueFactory;
 
@@ -17,24 +23,33 @@ class AfterSaveOrder implements ObserverInterface
      * @param OrderQueueInterfaceFactory $orderQueueFactory
      */
     public function __construct(
+        DataHelper $dataHelper,
         OrderQueueInterfaceFactory $orderQueueFactory
     ) {
+        $this->dataHelper = $dataHelper;
         $this->orderQueueFactory = $orderQueueFactory;
     }
 
     /**
      * Observer function called after order save (Order ID is not available at sales_order_place_after)
      *
-     * @param \Magento\Framework\Event\Observer $observer
+     * @param Observer $observer
      */
-    public function execute(\Magento\Framework\Event\Observer $observer)
+    public function execute(Observer $observer)
     {
-        /** @var $product \Magento\Sales\Api\Data\OrderInterface */
+        /** @var $order OrderInterface */
         $order = $observer->getEvent()->getOrder();
 
-        if ($order->getId()) {
-            $this->queueOrder($order->getId());
+        if (!$order->getId()) {
+            return;
         }
+
+        // Only add to order queue if store config is enabled
+        if ($this->dataHelper->getOrderSyncEnabled((int) $order->getStoreId()) == false) {
+            return;
+        }
+
+        $this->queueOrder($order->getId());
     }
 
     /**

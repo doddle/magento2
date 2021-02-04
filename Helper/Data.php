@@ -6,6 +6,7 @@ namespace Doddle\Returns\Helper;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
 use Magento\Framework\App\ProductMetadataInterface;
+use Magento\Store\Model\ScopeInterface;
 
 class Data extends AbstractHelper
 {
@@ -93,11 +94,16 @@ class Data extends AbstractHelper
     }
 
     /**
+     * @param int $storeId
      * @return bool
      */
-    public function getOrderSyncEnabled()
+    public function getOrderSyncEnabled(int $storeId)
     {
-        return $this->scopeConfig->isSetFlag(self::XML_PATH_ORDER_SYNC_ENABLED);
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_ORDER_SYNC_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
     }
 
     /**

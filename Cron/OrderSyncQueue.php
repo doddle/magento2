@@ -74,11 +74,6 @@ class OrderSyncQueue
      */
     public function processPendingOrders()
     {
-        // Only process order queue if enabled
-        if ($this->dataHelper->getOrderSyncEnabled() == false) {
-            return;
-        }
-
         /** @var OrderQueueCollection $pendingOrders */
         $pendingOrders = $this->orderQueueCollectionFactory->create();
 
@@ -95,11 +90,6 @@ class OrderSyncQueue
      */
     public function retryFailedOrders()
     {
-        // Only process order queue if enabled
-        if ($this->dataHelper->getOrderSyncEnabled() == false) {
-            return;
-        }
-
         $maxFails = $this->dataHelper->getOrderSyncMaxFails();
 
         /** @var OrderQueueCollection $failedOrders */
@@ -136,6 +126,11 @@ class OrderSyncQueue
         /** @var OrderQueueInterface $queuedOrder */
         foreach ($orderQueue as $queuedOrder) {
             $order = $orderCollection->getItemById($queuedOrder->getOrderId());
+
+            // Only push order if sync store config is enabled
+            if ($this->dataHelper->getOrderSyncEnabled((int) $order->getStoreId()) == false) {
+                continue;
+            }
 
             $orderData = $this->formatOrderForApi($order);
 

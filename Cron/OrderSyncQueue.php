@@ -176,13 +176,14 @@ class OrderSyncQueue
             ],
             "customer" => [
                 "email" => $order->getCustomerEmail(),
-                "mobileNumber" =>  $order->getBillingAddress()->getTelephone(),
-                "name" => [
-                    "firstName" => $order->getCustomerFirstname(),
-                    "lastName" => $order->getCustomerLastname()
-                ]
+                "name" => $this->getCustomerName($order)
             ]
         ];
+
+        // Add telephone number if set
+        if ($order->getBillingAddress()->getTelephone()) {
+            $orderData["customer"]["mobileNumber"] = $order->getBillingAddress()->getTelephone();
+        }
 
         // Add delivery address for physical orders only
         if (!$order->getIsVirtual()) {
@@ -229,6 +230,23 @@ class OrderSyncQueue
         }
 
         return $orderData;
+    }
+
+    /**
+     * @param OrderInterface $order
+     * @return string[]
+     */
+    private function getCustomerName(OrderInterface $order)
+    {
+        $customerName = [
+            "firstName" => $order->getCustomerFirstname() ? $order->getCustomerFirstname() : "Guest"
+        ];
+
+        if ($order->getCustomerLastname()) {
+            $customerName["lastName"] = $order->getCustomerLastname();
+        }
+
+        return $customerName;
     }
 
     /**

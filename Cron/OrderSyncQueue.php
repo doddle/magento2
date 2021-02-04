@@ -140,7 +140,7 @@ class OrderSyncQueue
             try {
                 $response = $this->apiHelper->sendOrder($orderData);
             } catch (\Exception $e) {
-                $this->logger->alert(
+                $this->logger->error(
                     sprintf(
                         '(Magento Order ID: %s) %s',
                         $queuedOrder->getOrderId(),

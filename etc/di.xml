@@ -6,10 +6,11 @@
     <preference for="Doddle\Returns\Api\Data\Product\VariationInterface" type="Doddle\Returns\Model\Product\Variation" />
     <preference for="Doddle\Returns\Api\Data\Product\VariationAttributeInterface" type="Doddle\Returns\Model\Product\VariationAttribute" />
 
-    <virtualType name="DoddleReturnsLogger" type="Magento\Framework\Logger\Monolog">
+    <virtualType name="DoddleReturnsLogger" type="Monolog\Logger">
         <arguments>
+            <argument name="name" xsi:type="string">Doddle Returns</argument>
             <argument name="handlers" xsi:type="array">
-                <item name="alert" xsi:type="object">Doddle\Returns\Logger\Handler\AlertHandler</item>
+                <item name="doddle" xsi:type="object">Doddle\Returns\Logger\Handler\Doddle</item>
             </argument>
         </arguments>
     </virtualType>

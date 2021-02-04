@@ -205,7 +205,7 @@ class OrderSyncQueue
                     "price" => (float) $orderLine->getPrice(),
                     "imageUrl" => $this->getProductImageUrl($orderLine->getProduct()),
                     "quantity" => (int) $orderLine->getQtyOrdered(),
-        //            "isNotReturnable" => (bool) $orderLine->getProduct()->getData("doddle_returns_excluded")
+                    // "isNotReturnable" => (bool) $orderLine->getProduct()->getData("doddle_returns_excluded")
                 ],
                 "sourceLocation" => [],
                 "destinationLocation" => [

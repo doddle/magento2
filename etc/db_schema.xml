@@ -5,7 +5,7 @@
     <column xsi:type="int" name="order_id" padding="10" unsigned="true" nullable="false" identity="false" comment="Magento order ID"/>
     <column xsi:type="varchar" name="status" nullable="false" length="255" default="pending" comment="Order push status"/>
     <column xsi:type="smallint" name="fail_count" padding="5" unsigned="true" nullable="false" identity="false" default="0" comment="Count of failed attempts to sync"/>
-    <column xsi:type="text" name="doddle_order_id" nullable="true" comment="Location description"/>
+    <column xsi:type="text" name="doddle_order_id" nullable="true" comment="Doddle Order ID"/>
     <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Created at date"/>
     <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated at date"/>
     <constraint xsi:type="primary" referenceId="PRIMARY">

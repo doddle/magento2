@@ -90,7 +90,7 @@ class UpgradeSchema implements UpgradeSchemaInterface
                 Table::TYPE_TEXT,
                 null,
                 [],
-                'Location description'
+                'Doddle Order ID'
             )->addColumn(
                 OrderQueueInterface::CREATED_AT,
                 Table::TYPE_TIMESTAMP,

@@ -276,7 +276,9 @@ class OrderSyncQueue
         }
 
         foreach ($shippingAddress->getStreet() as $index => $streetLine) {
-            $formattedAddress["line" . ($index+1)] = $streetLine;
+            if ($streetLine) {
+                $formattedAddress["line" . ($index + 1)] = $streetLine;
+            }
         }
 
         return $formattedAddress;

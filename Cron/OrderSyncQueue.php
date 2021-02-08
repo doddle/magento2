@@ -266,7 +266,7 @@ class OrderSyncQueue
     {
         $formattedAddress = [
             "town" => $shippingAddress->getCity(),
-            "postcode" => $shippingAddress->getPostcode(),
+            "postcode" => $shippingAddress->getPostcode() ? $shippingAddress->getPostcode() : 'n/a',
             "country" => $shippingAddress->getCountryId()
         ];
 

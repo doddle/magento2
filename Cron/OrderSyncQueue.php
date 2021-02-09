@@ -74,11 +74,6 @@ class OrderSyncQueue
      */
     public function processPendingOrders()
     {
-        // Only process order queue if enabled
-        if ($this->dataHelper->getOrderSyncEnabled() == false) {
-            return;
-        }
-
         /** @var OrderQueueCollection $pendingOrders */
         $pendingOrders = $this->orderQueueCollectionFactory->create();
 
@@ -95,11 +90,6 @@ class OrderSyncQueue
      */
     public function retryFailedOrders()
     {
-        // Only process order queue if enabled
-        if ($this->dataHelper->getOrderSyncEnabled() == false) {
-            return;
-        }
-
         $maxFails = $this->dataHelper->getOrderSyncMaxFails();
 
         /** @var OrderQueueCollection $failedOrders */
@@ -137,6 +127,11 @@ class OrderSyncQueue
         foreach ($orderQueue as $queuedOrder) {
             $order = $orderCollection->getItemById($queuedOrder->getOrderId());
 
+            // Only push order if sync store config is enabled
+            if ($this->dataHelper->getOrderSyncEnabled((int) $order->getStoreId()) == false) {
+                continue;
+            }
+
             $orderData = $this->formatOrderForApi($order);
 
             // Ensure failed response logic is followed if error occurs contacting Doddle API
@@ -145,7 +140,7 @@ class OrderSyncQueue
             try {
                 $response = $this->apiHelper->sendOrder($orderData);
             } catch (\Exception $e) {
-                $this->logger->alert(
+                $this->logger->error(
                     sprintf(
                         '(Magento Order ID: %s) %s',
                         $queuedOrder->getOrderId(),
@@ -181,13 +176,14 @@ class OrderSyncQueue
             ],
             "customer" => [
                 "email" => $order->getCustomerEmail(),
-                "mobileNumber" =>  $order->getBillingAddress()->getTelephone(),
-                "name" => [
-                    "firstName" => $order->getCustomerFirstname(),
-                    "lastName" => $order->getCustomerLastname()
-                ]
+                "name" => $this->getCustomerName($order)
             ]
         ];
+
+        // Add telephone number if set
+        if ($order->getBillingAddress()->getTelephone()) {
+            $orderData["customer"]["mobileNumber"] = $order->getBillingAddress()->getTelephone();
+        }
 
         // Add delivery address for physical orders only
         if (!$order->getIsVirtual()) {
@@ -209,7 +205,7 @@ class OrderSyncQueue
                     "price" => (float) $orderLine->getPrice(),
                     "imageUrl" => $this->getProductImageUrl($orderLine->getProduct()),
                     "quantity" => (int) $orderLine->getQtyOrdered(),
-        //            "isNotReturnable" => (bool) $orderLine->getProduct()->getData("doddle_returns_excluded")
+                    // "isNotReturnable" => (bool) $orderLine->getProduct()->getData("doddle_returns_excluded")
                 ],
                 "sourceLocation" => [],
                 "destinationLocation" => [
@@ -237,6 +233,23 @@ class OrderSyncQueue
     }
 
     /**
+     * @param OrderInterface $order
+     * @return string[]
+     */
+    private function getCustomerName(OrderInterface $order)
+    {
+        $customerName = [
+            "firstName" => $order->getCustomerFirstname() ? $order->getCustomerFirstname() : "Guest"
+        ];
+
+        if ($order->getCustomerLastname()) {
+            $customerName["lastName"] = $order->getCustomerLastname();
+        }
+
+        return $customerName;
+    }
+
+    /**
      * @param $product
      * @return mixed
      */
@@ -253,7 +266,7 @@ class OrderSyncQueue
     {
         $formattedAddress = [
             "town" => $shippingAddress->getCity(),
-            "postcode" => $shippingAddress->getPostcode(),
+            "postcode" => $shippingAddress->getPostcode() ? $shippingAddress->getPostcode() : 'n/a',
             "country" => $shippingAddress->getCountryId()
         ];
 
@@ -263,7 +276,9 @@ class OrderSyncQueue
         }
 
         foreach ($shippingAddress->getStreet() as $index => $streetLine) {
-            $formattedAddress["line" . ($index+1)] = $streetLine;
+            if ($streetLine) {
+                $formattedAddress["line" . ($index + 1)] = $streetLine;
+            }
         }
 
         return $formattedAddress;

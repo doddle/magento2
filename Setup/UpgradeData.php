@@ -95,7 +95,7 @@ class UpgradeData implements UpgradeDataInterface
             [
                 'label' => 'Exclude from Doddle Returns',
                 'group' => 'Doddle Returns',
-                'note' => '3Products flagged as excluded will not be available to return via Doddle Returns.',
+                'note' => 'Products flagged as excluded will not be available to return via Doddle Returns.',
                 'backend' => \Doddle\Returns\Model\Product\Attribute\Backend\Boolean::class,
                 'frontend' => '',
                 'input' => 'select',

@@ -40,9 +40,9 @@ class AddReturnsIntegration implements DataPatchInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function apply()
+    public function apply(): void
     {
         $this->integrationService->create([
             Integration::NAME => DataHelper::INTEGRATION_NAME,
@@ -55,17 +55,17 @@ class AddReturnsIntegration implements DataPatchInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public static function getDependencies()
+    public static function getDependencies(): array
     {
         return [];
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function getAliases()
+    public function getAliases(): array
     {
         return [];
     }

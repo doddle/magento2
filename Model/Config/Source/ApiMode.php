@@ -7,13 +7,15 @@ use Magento\Framework\Option\ArrayInterface;
 
 class ApiMode implements ArrayInterface
 {
-    const API_MODE_LIVE = 'live';
-    const API_MODE_TEST = 'test';
+    public const API_MODE_LIVE = 'live';
+    public const API_MODE_TEST = 'test';
 
     /**
+     * Retrieve as option array
+     *
      * @return array
      */
-    public function toOptionArray()
+    public function toOptionArray(): array
     {
         return [
             ['value' => self::API_MODE_LIVE, 'label' => __('Live')],
@@ -22,9 +24,11 @@ class ApiMode implements ArrayInterface
     }
 
     /**
+     * Retrieve as array
+     *
      * @return array
      */
-    public function toArray()
+    public function toArray(): array
     {
         return [
             self::API_MODE_LIVE => __('Live'),

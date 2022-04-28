@@ -56,7 +56,7 @@ class UpgradeData implements UpgradeDataInterface
     public function upgrade(
         ModuleDataSetupInterface $setup,
         ModuleContextInterface $context
-    ) {
+    ): void {
         // Return early to allow data patches to process in Magento > 2.3.0
         if (version_compare($this->dataHelper->getMajorMinorVersion(), '2.3', '>=')) {
             return;
@@ -72,10 +72,12 @@ class UpgradeData implements UpgradeDataInterface
     }
 
     /**
+     * Add returns eligibility attribute
+     *
      * @throws LocalizedException
      * @throws \Zend_Validate_Exception
      */
-    private function addReturnsEligibilityAttribute()
+    private function addReturnsEligibilityAttribute(): void
     {
         $eavSetup = $this->eavSetupFactory->create(['setup' => $this->setup]);
 
@@ -116,9 +118,11 @@ class UpgradeData implements UpgradeDataInterface
     }
 
     /**
+     * Add returns integration
+     *
      * @throws IntegrationException
      */
-    private function addReturnsIntegration()
+    private function addReturnsIntegration(): void
     {
         $this->integrationService->create([
             Integration::NAME => DataHelper::INTEGRATION_NAME,

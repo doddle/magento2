@@ -3,34 +3,32 @@ declare(strict_types=1);
 
 namespace Doddle\Returns\Model\Product;
 
-use Magento\Framework\Api\FilterBuilder;
-use Magento\Framework\Api\Search\FilterGroupBuilder;
-use Magento\Framework\Api\SearchCriteriaBuilder;
-use Magento\Framework\App\ObjectManager;
-use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Catalog\Api\Data\ProductInterface;
-use Magento\Catalog\Api\ProductRepositoryInterface;
-use Magento\Catalog\Model\Product\Attribute\Source\Status as ProductStatus;
-use Magento\Catalog\Model\ResourceModel\Product\Collection as ProductCollection;
-use Magento\CatalogInventory\Api\StockRegistryInterface;
-use Magento\ConfigurableProduct\Api\Data\OptionInterface;
-use Magento\ConfigurableProduct\Model\Product\Type\Configurable as ConfigurableType;
-use Magento\InventoryApi\Api\GetSourceItemsBySkuInterface;
-use Magento\Inventory\Model\SourceItem;
 use Doddle\Returns\Api\Data\Product\VariationAttributeInterface;
 use Doddle\Returns\Api\Data\Product\VariationAttributeInterfaceFactory;
 use Doddle\Returns\Api\Data\Product\VariationInterface;
 use Doddle\Returns\Api\Data\Product\VariationInterfaceFactory;
 use Doddle\Returns\Api\ProductVariationListInterface;
 use Doddle\Returns\Helper\Data as DataHelper;
+use Magento\Catalog\Api\Data\ProductInterface;
+use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Catalog\Model\Product\Attribute\Source\Status as ProductStatus;
+use Magento\CatalogInventory\Api\StockRegistryInterface;
+use Magento\ConfigurableProduct\Api\Data\OptionInterface;
+use Magento\ConfigurableProduct\Model\Product\Type\Configurable as ConfigurableType;
+use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable\Attribute\Collection;
+use Magento\Framework\Api\FilterBuilder;
+use Magento\Framework\Api\Search\FilterGroupBuilder;
+use Magento\Framework\Api\SearchCriteriaBuilder;
+use Magento\Framework\App\ObjectManager;
+use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\Module\Manager as ModuleManager;
+use Magento\InventorySalesApi\Api\Data\SalesChannelInterface;
+use Magento\InventorySalesApi\Api\GetProductSalableQtyInterface;
+use Magento\InventorySalesApi\Api\StockResolverInterface;
+use Magento\Store\Model\StoreManagerInterface;
 
 class VariationProvider implements ProductVariationListInterface
 {
-    private $parentProduct;
-    private $superAttributes;
-    private $superAttributeCodes;
-
     /** @var VariationInterfaceFactory */
     private $productVariationFactory;
 
@@ -58,6 +56,24 @@ class VariationProvider implements ProductVariationListInterface
     /** @var ProductStatus */
     private $productStatus;
 
+    /** @var StoreManagerInterface */
+    private $storeManager;
+
+    /** @var ModuleManager */
+    private $moduleManager;
+
+    /** @var ProductInterface */
+    private $parentProduct;
+
+    /** @var array */
+    private $superAttributes;
+
+    /** @var array */
+    private $superAttributeCodes;
+
+    /** @var int */
+    private $stockId;
+
     /**
      * @param VariationInterfaceFactory $productVariationFactory
      * @param VariationAttributeInterfaceFactory $variationAttributeFactory
@@ -68,6 +84,8 @@ class VariationProvider implements ProductVariationListInterface
      * @param FilterGroupBuilder $filterGroupBuilder
      * @param FilterBuilder $filterBuilder
      * @param ProductStatus $productStatus
+     * @param StoreManagerInterface $storeManager
+     * @param ModuleManager $moduleManager
      */
     public function __construct(
         VariationInterfaceFactory $productVariationFactory,
@@ -78,7 +96,9 @@ class VariationProvider implements ProductVariationListInterface
         SearchCriteriaBuilder $searchCriteriaBuilder,
         FilterGroupBuilder $filterGroupBuilder,
         FilterBuilder $filterBuilder,
-        ProductStatus $productStatus
+        ProductStatus $productStatus,
+        StoreManagerInterface $storeManager,
+        ModuleManager $moduleManager
     ) {
         $this->productVariationFactory = $productVariationFactory;
         $this->variationAttributeFactory = $variationAttributeFactory;
@@ -89,12 +109,14 @@ class VariationProvider implements ProductVariationListInterface
         $this->filterGroupBuilder = $filterGroupBuilder;
         $this->filterBuilder = $filterBuilder;
         $this->productStatus = $productStatus;
+        $this->storeManager = $storeManager;
+        $this->moduleManager = $moduleManager;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function getItems($sku)
+    public function getItems($sku): array
     {
         $output = [];
 
@@ -110,12 +132,13 @@ class VariationProvider implements ProductVariationListInterface
     }
 
     /**
+     * Get sibling products collection
+     *
      * @param ProductInterface $product
-     * @return ProductCollection
-     * @throws LocalizedException
+     * @return array
      * @throws NoSuchEntityException
      */
-    private function getSiblingsCollection(ProductInterface $product)
+    private function getSiblingsCollection(ProductInterface $product): array
     {
         // Filter collection by sibling product IDs
         $siblingsIds = $this->getSiblingProductIds($product);
@@ -149,12 +172,14 @@ class VariationProvider implements ProductVariationListInterface
     }
 
     /**
+     * Prepare product for response
+     *
      * @param ProductInterface $product
      * @return VariationInterface
      */
-    private function prepareProductForResponse(ProductInterface $product)
+    private function prepareProductForResponse(ProductInterface $product): VariationInterface
     {
-        /** @var VariationInterface $productVariation */
+        /** @var VariationInterface $productVariant */
         $productVariant = $this->productVariationFactory->create();
 
         $productVariant->setEntityId($product->getId());
@@ -165,7 +190,7 @@ class VariationProvider implements ProductVariationListInterface
         $productVariant->setAttributes($this->getAttributes($product));
 
         // Add stock quantity, or null if stock management disabled, using MSI or legacy stock model
-        if (interface_exists(GetSourceItemsBySkuInterface::class)) {
+        if ($this->isMSIEnabled()) {
             $productVariant->setStock($this->getProductStock($product));
         } else {
             $productVariant->setStock($this->getLegacyProductStock($product));
@@ -175,44 +200,69 @@ class VariationProvider implements ProductVariationListInterface
     }
 
     /**
+     * Check if MSI is enabled and all required code interfaces are present
+     *
+     * @return bool
+     */
+    private function isMSIEnabled(): bool
+    {
+        return $this->moduleManager->isEnabled('Magento_Inventory') &&
+            interface_exists(GetProductSalableQtyInterface::class) &&
+            interface_exists(StockResolverInterface::class) &&
+            interface_exists(SalesChannelInterface::class);
+    }
+
+    /**
      * Get the MSI (Magento > 2.3.0) stock quantity for a product.
      *
      * @param ProductInterface $product
-     * @return float|int|null
+     * @return float|null
      */
-    private function getProductStock(ProductInterface $product)
+    private function getProductStock(ProductInterface $product): ?float
     {
-        // Set default value to "false" (stock not managed).
-        $qty = null;
+        /** @var GetProductSalableQtyInterface $getProductSalableQty */
+        $getProductSalableQty = ObjectManager::getInstance()->get(GetProductSalableQtyInterface::class);
 
-        /** @var GetSourceItemsBySkuInterface $getSourceItemsBySku */
-        $getSourceItemsBySku = ObjectManager::getInstance()->get(GetSourceItemsBySkuInterface::class);
-
-        // Get all stock sources assigned to the product
-        $sourceItems = $getSourceItemsBySku->execute($product->getSku());
-
-        /** @var SourceItem $sourceItem */
-        foreach ($sourceItems as $sourceItem) {
-            // If the source is enabled for the product get its quantity
-            if ($sourceItem->getStatus() == true) {
-                // Start the counter at 0 now if this is the first active source for the product
-                if ($qty == false) {
-                    $qty = 0;
-                }
-                $qty += $sourceItem->getQuantity();
-            }
+        try {
+            $qty = $getProductSalableQty->execute($product->getSku(), $this->getMSIStockId());
+        } catch (\Exception $e) {
+            // Set default value to NULL (stock not managed).
+            $qty = null;
         }
 
         return $qty;
     }
 
     /**
+     * Get MSI stock ID for the current website's channel (based on Base URL of API request)
+     *
+     * @return int|null
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     */
+    private function getMSIStockId()
+    {
+        if (!$this->stockId) {
+            $websiteCode = $this->storeManager->getWebsite()->getCode();
+
+            /** @var StockResolverInterface $stockResolver */
+            $stockResolver = ObjectManager::getInstance()->get(StockResolverInterface::class);
+
+            $this->stockId = $stockResolver->execute(SalesChannelInterface::TYPE_WEBSITE, $websiteCode)->getStockId();
+        }
+
+        return $this->stockId;
+    }
+
+    /**
+     * Get the legacy (Magento < 2.3.0) stock quantity for a product.
+     *
      * @param ProductInterface $product
      * @return float|null
      */
-    private function getLegacyProductStock(ProductInterface $product)
+    private function getLegacyProductStock(ProductInterface $product): ?float
     {
-        // Set default value to "false" (stock not managed).
+        // Set default value to NULL (stock not managed).
         $qty = null;
 
         $stockItem = $this->stockRegistry->getStockItem($product->getId());
@@ -224,13 +274,15 @@ class VariationProvider implements ProductVariationListInterface
     }
 
     /**
+     * Get sibling product IDs
+     *
      * @param ProductInterface $product
-     * @return array|mixed
+     * @return array
      * @throws NoSuchEntityException
      */
-    private function getSiblingProductIds(ProductInterface $product)
+    private function getSiblingProductIds(ProductInterface $product): array
     {
-        $parentProduct = $this->getParentProduct($product->getId());
+        $parentProduct = $this->getParentProduct((int) $product->getId());
         $siblingIds = $this->configurableType->getChildrenIds($parentProduct->getId());
 
         $siblingIds = reset($siblingIds);
@@ -239,11 +291,13 @@ class VariationProvider implements ProductVariationListInterface
     }
 
     /**
-     * @param $productId
+     * Get parent product
+     *
+     * @param int $productId
      * @return ProductInterface
      * @throws NoSuchEntityException
      */
-    private function getParentProduct($productId)
+    private function getParentProduct(int $productId): ProductInterface
     {
         if (!isset($this->parentProduct)) {
             $parentIds = $this->configurableType->getParentIdsByChild($productId);
@@ -261,10 +315,12 @@ class VariationProvider implements ProductVariationListInterface
     }
 
     /**
+     * Get product's attributes
+     *
      * @param ProductInterface $product
      * @return array
      */
-    private function getAttributes(ProductInterface $product)
+    private function getAttributes(ProductInterface $product): array
     {
         $attributes = [];
         $superAttributes = $this->getSuperAttributes($product);
@@ -286,10 +342,13 @@ class VariationProvider implements ProductVariationListInterface
     }
 
     /**
+     * Get super attribute codes
+     *
      * @param ProductInterface $product
-     * @return mixed
+     * @return array
+     * @throws NoSuchEntityException
      */
-    private function getSuperAttributeCodes(ProductInterface $product)
+    private function getSuperAttributeCodes(ProductInterface $product): array
     {
         if (!isset($this->superAttributeCodes)) {
             $superAttributes = $this->getSuperAttributes($product);
@@ -302,13 +361,16 @@ class VariationProvider implements ProductVariationListInterface
     }
 
     /**
+     * Get super attributes
+     *
      * @param ProductInterface $product
-     * @return OptionInterface
+     * @return array|Collection
+     * @throws NoSuchEntityException
      */
     private function getSuperAttributes(ProductInterface $product)
     {
         if (!isset($this->superAttributes)) {
-            $parentProduct = $this->getParentProduct($product->getId());
+            $parentProduct = $this->getParentProduct((int) $product->getId());
             $this->superAttributes = $parentProduct->getTypeInstance()->getConfigurableAttributes($parentProduct);
         }
 
@@ -316,18 +378,18 @@ class VariationProvider implements ProductVariationListInterface
     }
 
     /**
-     * Returns the main image url of the variation product, or the parent product if no image applied to the variation
+     * Retrieve the main image url of the variation product, or the parent product if no image applied to the variation
      *
      * @param ProductInterface $product
      * @return string
      */
-    private function getProductImageUrl(ProductInterface $product)
+    private function getProductImageUrl(ProductInterface $product): string
     {
         $image = $product->getImage();
 
         // Get the parent product's image if variation has no image set
         if (!$image || $image == 'no_selection') {
-            $image = $this->getParentProduct($product->getId())->getImage();
+            $image = $this->getParentProduct((int) $product->getId())->getImage();
         }
 
         return (string) $product->getMediaConfig()->getMediaUrl($image);

@@ -40,7 +40,7 @@ class UpgradeSchema implements UpgradeSchemaInterface
     public function upgrade(
         SchemaSetupInterface $setup,
         ModuleContextInterface $context
-    ) {
+    ): void {
         // Return early to allow db_schema.xml to process in Magento > 2.3.0
         if (version_compare($this->dataHelper->getMajorMinorVersion(), '2.3', '>=')) {
             return;
@@ -55,9 +55,11 @@ class UpgradeSchema implements UpgradeSchemaInterface
     }
 
     /**
+     * Add order queue table
+     *
      * @throws \Zend_Db_Exception
      */
-    private function addOrderQueueTable()
+    private function addOrderQueueTable(): void
     {
         $table = $this->connection
             ->newTable($this->setup->getTable(DataHelper::DB_TABLE_ORDER_QUEUE))

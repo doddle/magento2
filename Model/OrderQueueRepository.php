@@ -10,11 +10,11 @@ use Doddle\Returns\Api\Data\OrderQueueInterface;
 class OrderQueueRepository implements OrderQueueRepositoryInterface
 {
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function save(OrderQueueInterface $orderQueue)
+    public function save(OrderQueueInterface $orderQueue): OrderQueueInterface
     {
-        $orderQueue->getResource()->save($orderQueue);
+        $orderQueue->save($orderQueue);
         return $orderQueue;
     }
 }

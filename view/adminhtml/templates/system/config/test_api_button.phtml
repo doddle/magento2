@@ -1,6 +1,14 @@
-<button class="scalable" type="button" id="<?= $block->escapeHtmlAttr($block->getHtmlId()) ?>" data-mage-init='{"Doddle_Returns/js/api-test":{
+<?php
+use Doddle\Returns\Block\Adminhtml\System\Config\TestApiButton;
+
+/** @var TestApiButton $block */
+?>
+<button class="scalable"
+        type="button"
+        id="<?= $block->escapeHtmlAttr($block->getHtmlId()) ?>" data-mage-init='{"Doddle_Returns/js/api-test":{
     "buttonId": "<?= $block->escapeHtmlAttr($block->getHtmlId()) ?>",
+    "buttonLabel": "<?= $block->escapeHtmlAttr($block->getButtonLabel()) ?>",
     "successMessage": "<?= $block->escapeHtmlAttr(__($block->getSuccessMessage())) ?>",
     "failMessage": "<?= $block->escapeHtmlAttr(__($block->getFailMessage())) ?>"}, "validation": {}}'>
-    <span><?= $block->escapeHtml($block->getButtonLabel()) ?></span>
+    <span><?= $block->escapeHtml(__($block->getButtonLabel())) ?></span>
 </button>

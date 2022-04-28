@@ -8,5 +8,6 @@ use Monolog\Logger as MonologLogger;
 
 class Doddle extends BaseHandler
 {
+    /** @var string */
     protected $fileName = '/var/log/doddle_returns.log';
 }

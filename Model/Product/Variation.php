@@ -9,7 +9,7 @@ use Doddle\Returns\Api\Data\Product\VariationInterface;
 class Variation extends AbstractModel implements VariationInterface
 {
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function getSku()
     {
@@ -17,7 +17,7 @@ class Variation extends AbstractModel implements VariationInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function setSku($sku)
     {
@@ -25,7 +25,7 @@ class Variation extends AbstractModel implements VariationInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function getName()
     {
@@ -33,7 +33,7 @@ class Variation extends AbstractModel implements VariationInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function setName($name)
     {
@@ -41,7 +41,7 @@ class Variation extends AbstractModel implements VariationInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function getImageUrl()
     {
@@ -49,7 +49,7 @@ class Variation extends AbstractModel implements VariationInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function setImageUrl($imageUrl)
     {
@@ -57,7 +57,7 @@ class Variation extends AbstractModel implements VariationInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function getStock()
     {
@@ -65,7 +65,7 @@ class Variation extends AbstractModel implements VariationInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function setStock($stock)
     {
@@ -73,7 +73,7 @@ class Variation extends AbstractModel implements VariationInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function getAttributes()
     {
@@ -81,7 +81,7 @@ class Variation extends AbstractModel implements VariationInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function setAttributes($attributes)
     {
@@ -89,7 +89,7 @@ class Variation extends AbstractModel implements VariationInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function getReturnsExcluded()
     {
@@ -97,7 +97,7 @@ class Variation extends AbstractModel implements VariationInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function setReturnsExcluded($returnsExcluded)
     {

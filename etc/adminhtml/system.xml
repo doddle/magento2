@@ -60,6 +60,11 @@
                     <label>Order Sync Max Fail Attempts</label>
                     <comment><![CDATA[Number of times to retry sending orders which have failed to send to Doddle previously. Set to "0" for unlimited attempts.]]></comment>
                 </field>
+                <field id="backfill" translate="button_label" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label/>
+                    <button_label>Backfill Orders</button_label>
+                    <frontend_model>Doddle\Returns\Block\Adminhtml\System\Config\BackfillButton</frontend_model>
+                </field>
             </group>
         </section>
     </system>

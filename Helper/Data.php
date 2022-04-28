@@ -14,24 +14,24 @@ class Data extends AbstractHelper
     private $productMetadata;
 
     // Database Tables
-    const DB_TABLE_ORDER_QUEUE = 'doddle_returns_order_sync_queue';
+    public const DB_TABLE_ORDER_QUEUE = 'doddle_returns_order_sync_queue';
 
     // Attributes
-    const ATTRIBUTE_CODE_RETURNS_ELIGIBILITY = 'doddle_returns_excluded';
+    public const ATTRIBUTE_CODE_RETURNS_ELIGIBILITY = 'doddle_returns_excluded';
 
     // Integrations
-    const INTEGRATION_NAME = 'Doddle Returns';
+    public const INTEGRATION_NAME = 'Doddle Returns';
 
     // Config
-    const XML_PATH_API_KEY               = 'doddle_returns/api/key';
-    const XML_PATH_API_SECRET            = 'doddle_returns/api/secret';
-    const XML_PATH_API_MODE              = 'doddle_returns/api/mode';
-    const XML_PATH_API_LIVE_URL          = 'doddle_returns/api/live_url';
-    const XML_PATH_API_TEST_URL          = 'doddle_returns/api/test_url';
-    const XML_PATH_COMPANY_ID            = 'doddle_returns/order_sync/company_id';
-    const XML_PATH_ORDER_SYNC_ENABLED    = 'doddle_returns/order_sync/enabled';
-    const XML_PATH_ORDER_SYNC_BATCH_SIZE = 'doddle_returns/order_sync/batch_size';
-    const XML_PATH_ORDER_SYNC_MAX_FAILS  = 'doddle_returns/order_sync/max_fails';
+    private const XML_PATH_API_KEY               = 'doddle_returns/api/key';
+    private const XML_PATH_API_SECRET            = 'doddle_returns/api/secret';
+    private const XML_PATH_API_MODE              = 'doddle_returns/api/mode';
+    private const XML_PATH_API_LIVE_URL          = 'doddle_returns/api/live_url';
+    private const XML_PATH_API_TEST_URL          = 'doddle_returns/api/test_url';
+    private const XML_PATH_COMPANY_ID            = 'doddle_returns/order_sync/company_id';
+    private const XML_PATH_ORDER_SYNC_ENABLED    = 'doddle_returns/order_sync/enabled';
+    private const XML_PATH_ORDER_SYNC_BATCH_SIZE = 'doddle_returns/order_sync/batch_size';
+    private const XML_PATH_ORDER_SYNC_MAX_FAILS  = 'doddle_returns/order_sync/max_fails';
 
     /**
      * @param Context $context
@@ -46,58 +46,72 @@ class Data extends AbstractHelper
     }
 
     /**
+     * Get API key from config
+     *
      * @return string
      */
-    public function getApiKey()
+    public function getApiKey(): string
     {
         return (string) $this->scopeConfig->getValue(self::XML_PATH_API_KEY);
     }
 
     /**
+     * Get API secret from config
+     *
      * @return string
      */
-    public function getApiSecret()
+    public function getApiSecret(): string
     {
         return (string) $this->scopeConfig->getValue(self::XML_PATH_API_SECRET);
     }
 
     /**
+     * Get API mode from config
+     *
      * @return string
      */
-    public function getApiMode()
+    public function getApiMode(): string
     {
         return (string) $this->scopeConfig->getValue(self::XML_PATH_API_MODE);
     }
 
     /**
+     * Get Live API URL from config
+     *
      * @return string
      */
-    public function getLiveApiUrl()
+    public function getLiveApiUrl(): string
     {
         return (string) $this->scopeConfig->getValue(self::XML_PATH_API_LIVE_URL);
     }
 
     /**
+     * Get Test API URL from config
+     *
      * @return string
      */
-    public function getTestApiUrl()
+    public function getTestApiUrl(): string
     {
         return (string) $this->scopeConfig->getValue(self::XML_PATH_API_TEST_URL);
     }
 
     /**
+     * Get company ID from config
+     *
      * @return string
      */
-    public function getCompanyId()
+    public function getCompanyId(): string
     {
         return (string) $this->scopeConfig->getValue(self::XML_PATH_COMPANY_ID);
     }
 
     /**
+     * Get order sync enabled from config (store scope)
+     *
      * @param int $storeId
      * @return bool
      */
-    public function getOrderSyncEnabled(int $storeId)
+    public function getOrderSyncEnabled(int $storeId): bool
     {
         return $this->scopeConfig->isSetFlag(
             self::XML_PATH_ORDER_SYNC_ENABLED,
@@ -107,30 +121,46 @@ class Data extends AbstractHelper
     }
 
     /**
+     * Get order sync batch size from config
+     *
      * @return int
      */
-    public function getOrderSyncBatchSize()
+    public function getOrderSyncBatchSize(): int
     {
         return (int) $this->scopeConfig->getValue(self::XML_PATH_ORDER_SYNC_BATCH_SIZE);
     }
 
     /**
+     * Get order sync max fails from config
+     *
      * @return int
      */
-    public function getOrderSyncMaxFails()
+    public function getOrderSyncMaxFails(): int
     {
         return (int) $this->scopeConfig->getValue(self::XML_PATH_ORDER_SYNC_MAX_FAILS);
     }
 
     /**
-     * @return bool|string
+     * Get Magento major/minor version
+     *
+     * @return string|null
      */
-    public function getMajorMinorVersion()
+    public function getMajorMinorVersion(): ?string
     {
         $versionParts = explode('.', $this->productMetadata->getVersion());
         if (!isset($versionParts[0]) || !isset($versionParts[1])) {
-            return false;
+            return null;
         }
         return $versionParts[0] . '.' . $versionParts[1];
+    }
+
+    /**
+     * Check if a value contains non-zero decimals
+     *
+     * @return bool
+     */
+    public function hasDecimals($value): bool
+    {
+        return is_numeric($value) && floor((float) $value) != $value;
     }
 }

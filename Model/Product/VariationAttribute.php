@@ -9,7 +9,7 @@ use Doddle\Returns\Api\Data\Product\VariationAttributeInterface;
 class VariationAttribute extends AbstractModel implements VariationAttributeInterface
 {
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function getLabel()
     {
@@ -17,7 +17,7 @@ class VariationAttribute extends AbstractModel implements VariationAttributeInte
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function getValue()
     {
@@ -25,7 +25,7 @@ class VariationAttribute extends AbstractModel implements VariationAttributeInte
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function getValueIndex()
     {

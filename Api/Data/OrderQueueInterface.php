@@ -3,16 +3,20 @@ namespace Doddle\Returns\Api\Data;
 
 interface OrderQueueInterface
 {
-    public const ID              = 'sync_id';
-    public const ORDER_ID        = 'order_id';
-    public const STATUS          = 'status';
-    public const FAIL_COUNT      = 'fail_count';
-    public const DODDLE_ORDER_ID = 'doddle_order_id';
-    public const CREATED_AT      = 'created_at';
-    public const UPDATED_AT      = 'updated_at';
-    public const STATUS_PENDING  = 'pending';
-    public const STATUS_SYNCHED  = 'synched';
-    public const STATUS_FAILED   = 'failed';
+    public const ID               = 'sync_id';
+    public const ORDER_ID         = 'order_id';
+    public const STATUS           = 'status';
+    public const FAIL_COUNT       = 'fail_count';
+    public const DODDLE_ORDER_ID  = 'doddle_order_id';
+    public const CREATED_AT       = 'created_at';
+    public const UPDATED_AT       = 'updated_at';
+    public const STATUS_PENDING   = 'pending';
+    public const STATUS_SYNCHED   = 'synched';
+    public const STATUS_FAILED    = 'failed';
+    public const STATUS_CANCEL    = 'cancel';
+    public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_UPDATE    = 'update';
+    public const STATUS_UPDATED   = 'updated';
 
     /**
      * Get entity ID

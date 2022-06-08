@@ -157,6 +157,7 @@ class Data extends AbstractHelper
     /**
      * Check if a value contains non-zero decimals
      *
+     * @param $value
      * @return bool
      */
     public function hasDecimals($value): bool

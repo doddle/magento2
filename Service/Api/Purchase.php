@@ -99,6 +99,21 @@ class Purchase
     }
 
     /**
+     * Compile purchase update data
+     *
+     * @param OrderInterface $order
+     * @return array
+     */
+    public function getPurchaseUpdateData(OrderInterface $order): array
+    {
+        $purchaseData = [
+            'deliveryAddress' => $this->getDeliveryData($order)
+        ];
+
+        return $purchaseData;
+    }
+
+    /**
      * Compile order line data
      *
      * @param OrderInterface $order
@@ -165,7 +180,6 @@ class Purchase
 
             $orderLines[] = $orderLineData;
         }
-
 
         return $orderLines;
     }

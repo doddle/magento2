@@ -61,7 +61,6 @@ class AfterSaveOrder implements ObserverInterface
      * Queue up the order if it is not already queued
      *
      * @param $orderId
-     * @throws \Exception
      */
     private function queueOrder($orderId): void
     {

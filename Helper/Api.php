@@ -9,8 +9,8 @@ use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
 use Magento\Framework\Exception\AuthorizationException;
 use Magento\Framework\Exception\RemoteServiceUnavailableException;
-use Magento\Framework\HTTP\Client\CurlFactory;
-use Magento\Framework\HTTP\Client\Curl;
+use Doddle\Returns\Model\HTTP\Client\CurlFactory;
+use Doddle\Returns\Model\HTTP\Client\Curl;
 use Magento\Framework\Serialize\Serializer\Json;
 
 class Api extends AbstractHelper
@@ -48,21 +48,23 @@ class Api extends AbstractHelper
     }
 
     /**
-     * Make a post request
+     * Make a POST request
      *
      * @param $path
-     * @param $data
-     * @param $accessScope
+     * @param null $accessScope
+     * @param null $data
      * @return array
      * @throws AuthorizationException
      * @throws RemoteServiceUnavailableException
      */
     public function postRequest(
         $path,
-        $data = null,
-        $accessScope = null
+        $accessScope = null,
+        $data = null
     ): array {
-        $jsonData = $this->jsonEncoder->serialize($data);
+        if ($data !== null) {
+            $data = $this->jsonEncoder->serialize($data);
+        }
 
         $accessToken = $this->getAccessToken(
             $accessScope
@@ -80,7 +82,7 @@ class Api extends AbstractHelper
         try {
             $curl->post(
                 $url,
-                $jsonData
+                $data
             );
         } catch (\Exception $e) {
             throw new RemoteServiceUnavailableException(
@@ -95,7 +97,68 @@ class Api extends AbstractHelper
         if ($curl->getStatus() !== 200) {
             throw new RemoteServiceUnavailableException(
                 __(
-                    'Got HTTP %1 response for request: %2 - %3',
+                    'Got HTTP %1 response for POST request: %2 - %3',
+                    $curl->getStatus(),
+                    $url,
+                    $curl->getBody()
+                )
+            );
+        }
+
+        return (array) $this->jsonEncoder->unserialize($curl->getBody());
+    }
+
+    /**
+     * Make a PATCH request
+     *
+     * @param $path
+     * @param null $accessScope
+     * @param null $data
+     * @return array
+     * @throws AuthorizationException
+     * @throws RemoteServiceUnavailableException
+     */
+    public function patchRequest(
+        $path,
+        $accessScope = null,
+        $data = null
+    ): array {
+        if ($data !== null) {
+            $data = $this->jsonEncoder->serialize($data);
+        }
+
+        $accessToken = $this->getAccessToken(
+            $accessScope
+        );
+
+        /** @var Curl $curl */
+        $curl = $this->curlFactory->create();
+
+        $curl->addHeader('Authorization', 'Bearer ' . $accessToken);
+        $curl->addHeader('Content-type', 'application/json');
+        $curl->addHeader('Expect:', ''); // Avoid HTTP 100 response from API
+
+        $url = $this->getApiUrl($path);
+
+        try {
+            $curl->patch(
+                $url,
+                $data
+            );
+        } catch (\Exception $e) {
+            throw new RemoteServiceUnavailableException(
+                __(
+                    'Failed to send HTTP PATCH request: %1 - %2',
+                    $url,
+                    $e->getMessage()
+                )
+            );
+        }
+
+        if ($curl->getStatus() !== 200) {
+            throw new RemoteServiceUnavailableException(
+                __(
+                    'Got HTTP %1 response for PATCH request: %2 - %3',
                     $curl->getStatus(),
                     $url,
                     $curl->getBody()

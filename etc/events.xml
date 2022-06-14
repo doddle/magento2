@@ -3,4 +3,10 @@
     <event name="sales_order_save_after">
         <observer name="doddle_returns_sales_order_save_after_handler" instance="Doddle\Returns\Observer\AfterSaveOrder" />
     </event>
+    <event name="order_cancel_after">
+        <observer name="doddle_returns_sales_order_cancel" instance="Doddle\Returns\Observer\AfterCancelOrder" />
+    </event>
+    <event name="admin_sales_order_address_update">
+        <observer name="doddle_returns_sales_order_update" instance="Doddle\Returns\Observer\AfterUpdateOrder" />
+    </event>
 </config>

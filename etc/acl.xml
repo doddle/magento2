@@ -5,6 +5,7 @@
             <resource id="Magento_Backend::admin">
                 <resource id="Doddle_Returns::returns" title="Doddle Returns" translate="title" sortOrder="30">
                     <resource id="Doddle_Returns::variations" title="Product Variations" translate="title" sortOrder="10" />
+                    <resource id="Doddle_Returns::backfill" title="Backfill Orders" translate="title" sortOrder="20" />
                 </resource>
                 <resource id="Magento_Backend::stores">
                     <resource id="Magento_Backend::stores_settings">

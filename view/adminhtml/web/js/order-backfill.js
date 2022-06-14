@@ -1,11 +1,10 @@
 define([
     'jquery',
-    'Magento_Ui/js/modal/alert',
     'mage/translate'
-], function ($, alert) {
+], function ($) {
     'use strict';
 
-    $.widget('doddle.apiTest', {
+    $.widget('doddle.orderBackfill', {
         options: {
             buttonId: '',
             buttonLabel: '',
@@ -13,17 +12,19 @@ define([
             failMessage: ''
         },
         _create: function () {
-            this._on({
-                'click': $.proxy(this._testApi, this)
+            this._checkCanDisplay();
+            this._on($('button', this.element), {
+                'click': $.proxy(this._backfillOrders, this)
             });
         },
-        _testApi: function () {
+        _backfillOrders: function () {
+            var url = this.options.backfillUrl + '?limit=' + parseInt($('.backfill-days-limit').val());
+            window.location.assign(url);
+        },
+        _checkCanDisplay: function () {
             var apiKey = $('#doddle_returns_api_key').val();
             var apiSecret = $('#doddle_returns_api_secret').val();
             var basicString = btoa(apiKey + ':' + apiSecret);
-
-            $('span', this.element).html($.mage.__('Testing Connection...'));
-
             var apiMode = $('#doddle_returns_api_mode').val();
             var apiUrlSelector = apiMode == 'live' ? '#doddle_returns_api_live_url' : '#doddle_returns_api_test_url';
             var apiUrl = $(apiUrlSelector).val();
@@ -32,20 +33,14 @@ define([
             xhr.onreadystatechange = function() {
                 if (xhr.readyState == 4) {
                     if (xhr.status == 200) {
-                        try {
-                            var response = JSON.parse(xhr.responseText);
-                            if (response.access_token) {
-                                alert({content: this.options.successMessage});
-                            } else {
-                                alert({content: this.options.failMessage});
-                            }
-                        } catch(err) {
-                            alert({content: this.options.failMessage});
+                        var response = JSON.parse(xhr.responseText);
+                        if (response.access_token) {
+                            $('button', this.element).attr('disabled', false);
+                            $('.note', this.element).html(
+                                $.mage.__('Clicking this button will queue all existing unsynched orders to be synched with Doddle (limited to a set number of days back from today if supplied).')
+                            );
                         }
-                    } else {
-                        alert({content: this.options.failMessage});
                     }
-                    $('span', this.element).html($.mage.__(this.options.buttonLabel));
                 }
             }.bind(this);
 
@@ -56,5 +51,5 @@ define([
         }
     });
 
-    return $.doddle.apiTest;
+    return $.doddle.orderBackfill;
 });

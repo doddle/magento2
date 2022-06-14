@@ -1,0 +1,18 @@
+<?php
+use Doddle\Returns\Block\Adminhtml\System\Config\BackfillButton;
+
+/** @var BackfillButton $block */
+?>
+<div data-mage-init='{"Doddle_Returns/js/order-backfill":{
+        "backfillUrl": "<?= $block->escapeHtmlAttr($block->getUrl('doddle_returns/backfill/index')) ?>",
+        "buttonId": "<?= $block->escapeHtmlAttr($block->getHtmlId()) ?>",
+        "buttonLabel": "<?= $block->escapeHtmlAttr($block->getButtonLabel()) ?>"}}'>
+    <button disabled="disabled" class="scalable" type="button" id="<?= $block->escapeHtmlAttr($block->getHtmlId()) ?>" >
+        <span><?= $block->escapeHtml(__($block->getButtonLabel())) ?></span>
+    </button>
+    <input class="admin__control-text backfill-days-limit" type="number" min="0" placeholder="Limit number of days"/>
+    <p class="note">
+        <?= $block->escapeHtml(__('Backfilling orders is disabled as the API credentials are
+        currently invalid. Please update and save valid credentials.')) ?>
+    </p>
+</div>

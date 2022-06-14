@@ -7,5 +7,11 @@
         <job name="doddle_returns_order_sync_retry" instance="Doddle\Returns\Cron\OrderSyncQueue" method="retryFailedOrders">
             <schedule>*/5 * * * *</schedule>
         </job>
+        <job name="doddle_returns_order_cancel" instance="Doddle\Returns\Cron\OrderSyncQueue" method="processCancelOrders">
+            <schedule>*/5 * * * *</schedule>
+        </job>
+        <job name="doddle_returns_order_update" instance="Doddle\Returns\Cron\OrderSyncQueue" method="processUpdateOrders">
+            <schedule>*/5 * * * *</schedule>
+        </job>
     </group>
 </config>

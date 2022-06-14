@@ -3,86 +3,114 @@ namespace Doddle\Returns\Api\Data\Product;
 
 interface VariationInterface
 {
-    const ENTITY_ID        = 'entity_id';
-    const SKU              = 'sku';
-    const NAME             = 'name';
-    const IMAGE_URL        = 'image_url';
-    const STOCK            = 'stock';
-    const RETURNS_EXCLUDED = 'doddle_returns_excluded';
-    const ATTRIBUTES       = 'attributes';
+    public const ENTITY_ID        = 'entity_id';
+    public const SKU              = 'sku';
+    public const NAME             = 'name';
+    public const IMAGE_URL        = 'image_url';
+    public const STOCK            = 'stock';
+    public const RETURNS_EXCLUDED = 'doddle_returns_excluded';
+    public const ATTRIBUTES       = 'attributes';
 
     /**
+     * Get entity ID
+     *
      * @return int
      */
     public function getEntityId();
 
     /**
+     * Set entity ID
+     *
      * @param $entityId
      * @return int
      */
     public function setEntityId($entityId);
 
     /**
+     * Get product SKU
+     *
      * @return string
      */
     public function getSku();
 
     /**
+     * Set product SKU
+     *
      * @param $sku
      * @return string
      */
     public function setSku($sku);
 
     /**
+     * Get product name
+     *
      * @return string
      */
     public function getName();
 
     /**
+     * Set product name
+     *
      * @param $name
      * @return string
      */
     public function setName($name);
 
     /**
+     * Get product image URL
+     *
      * @return string
      */
     public function getImageUrl();
 
     /**
+     * Set product image URL
+     *
      * @param $imageUrl
      * @return string
      */
     public function setImageUrl($imageUrl);
 
     /**
-     * @return float
+     * Get product stock
+     *
+     * @return float|null
      */
     public function getStock();
 
     /**
+     * Set product stock
+     *
      * @param $stock
-     * @return float
+     * @return float|null
      */
     public function setStock($stock);
 
     /**
+     * Get product attributes
+     *
      * @return \Doddle\Returns\Api\Data\Product\VariationAttributeInterface[]
      */
     public function getAttributes();
 
     /**
+     * Set product attributes
+     *
      * @param \Doddle\Returns\Api\Data\Product\VariationAttributeInterface[] $attributes
      * @return \Doddle\Returns\Api\Data\Product\VariationAttributeInterface[]
      */
     public function setAttributes($attributes);
 
     /**
+     * Get product returns excluded
+     *
      * @return boolean
      */
     public function getReturnsExcluded();
 
     /**
+     * Set product returns excluded
+     *
      * @param $returnsExcluded
      * @return boolean
      */

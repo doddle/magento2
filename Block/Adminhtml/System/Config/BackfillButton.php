@@ -3,11 +3,11 @@ declare(strict_types=1);
 
 namespace Doddle\Returns\Block\Adminhtml\System\Config;
 
-use Magento\Framework\Data\Form\Element\AbstractElement;
 use Magento\Config\Block\System\Config\Form\Field;
+use Magento\Framework\Data\Form\Element\AbstractElement;
 use Magento\Framework\Phrase;
 
-class TestApiButton extends Field
+class BackfillButton extends Field
 {
     /**
      * Prepare admin layout
@@ -18,7 +18,7 @@ class TestApiButton extends Field
     {
         parent::_prepareLayout();
         if (!$this->getTemplate()) {
-            $this->setTemplate('Doddle_Returns::system/config/test_api_button.phtml');
+            $this->setTemplate('Doddle_Returns::system/config/backfill_button.phtml');
         }
         return $this;
     }
@@ -51,25 +51,5 @@ class TestApiButton extends Field
         );
 
         return $this->_toHtml();
-    }
-
-    /**
-     * Get translated success message
-     *
-     * @return Phrase
-     */
-    public function getSuccessMessage(): Phrase
-    {
-        return __('API credentials successfully authenticated');
-    }
-
-    /**
-     * Get translated failure message
-     *
-     * @return Phrase
-     */
-    public function getFailMessage(): Phrase
-    {
-        return __('Invalid API credentials');
     }
 }

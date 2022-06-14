@@ -3,20 +3,19 @@ declare(strict_types=1);
 
 namespace Doddle\Returns\Helper;
 
-use Magento\Framework\App\Helper\Context;
-use Magento\Framework\App\Helper\AbstractHelper;
-use Magento\Framework\HTTP\Client\CurlFactory;
-use Magento\Framework\Serialize\Serializer\Json;
-use Magento\Framework\Exception\RemoteServiceUnavailableException;
-use Magento\Framework\Exception\AuthorizationException;
 use Doddle\Returns\Helper\Data as DataHelper;
 use Doddle\Returns\Model\Config\Source\ApiMode;
+use Magento\Framework\App\Helper\AbstractHelper;
+use Magento\Framework\App\Helper\Context;
+use Magento\Framework\Exception\AuthorizationException;
+use Magento\Framework\Exception\RemoteServiceUnavailableException;
+use Doddle\Returns\Model\HTTP\Client\CurlFactory;
+use Doddle\Returns\Model\HTTP\Client\Curl;
+use Magento\Framework\Serialize\Serializer\Json;
 
 class Api extends AbstractHelper
 {
-    const PATH_OAUTH_TOKEN = '/v1/oauth/token';
-    const PATH_ORDERS = '/v2/orders/';
-    const SCOPE_ORDERS = 'orders:write';
+    private const PATH_OAUTH_TOKEN = '/v1/oauth/token';
 
     /** @var DataHelper */
     private $dataHelper;
@@ -49,57 +48,41 @@ class Api extends AbstractHelper
     }
 
     /**
-     * Post an order to the Doddle Orders API, return the Doddle API order ID if successful
+     * Make a POST request
      *
-     * @param $orderData
-     * @return bool|mixed
+     * @param $path
+     * @param null $accessScope
+     * @param null $data
+     * @return array
      * @throws AuthorizationException
      * @throws RemoteServiceUnavailableException
      */
-    public function sendOrder($orderData)
-    {
-        $jsonOrderData = $this->jsonEncoder->serialize($orderData);
-
-        $accessToken = $this->getAccessToken(
-            self::SCOPE_ORDERS
-        );
-
-        $response = $this->postRequest(
-            self::PATH_ORDERS,
-            $jsonOrderData,
-            $accessToken
-        );
-
-        if (isset($response['resource']['orderId'])) {
-            return $response['resource']['orderId'];
+    public function postRequest(
+        $path,
+        $accessScope = null,
+        $data = null
+    ): array {
+        if ($data !== null) {
+            $data = $this->jsonEncoder->serialize($data);
         }
 
-        return false;
-    }
+        $accessToken = $this->getAccessToken(
+            $accessScope
+        );
 
-    /**
-     * @param $path
-     * @param null $postData
-     * @param null $accessToken
-     * @return array|bool|float|int|mixed|string|null
-     * @throws RemoteServiceUnavailableException
-     */
-    private function postRequest(
-        $path,
-        $postData = null,
-        $accessToken = null
-    ) {
+        /** @var Curl $curl */
         $curl = $this->curlFactory->create();
 
         $curl->addHeader('Authorization', 'Bearer ' . $accessToken);
         $curl->addHeader('Content-type', 'application/json');
+        $curl->addHeader('Expect:', ''); // Avoid HTTP 100 response from API
 
         $url = $this->getApiUrl($path);
 
         try {
             $curl->post(
                 $url,
-                $postData
+                $data
             );
         } catch (\Exception $e) {
             throw new RemoteServiceUnavailableException(
@@ -111,10 +94,10 @@ class Api extends AbstractHelper
             );
         }
 
-        if ($curl->getStatus() != 200) {
+        if ($curl->getStatus() !== 200) {
             throw new RemoteServiceUnavailableException(
                 __(
-                    'Got HTTP %1 response for request: %2 - %3',
+                    'Got HTTP %1 response for POST request: %2 - %3',
                     $curl->getStatus(),
                     $url,
                     $curl->getBody()
@@ -122,15 +105,78 @@ class Api extends AbstractHelper
             );
         }
 
-        return $this->jsonEncoder->unserialize($curl->getBody());
+        return (array) $this->jsonEncoder->unserialize($curl->getBody());
     }
 
     /**
+     * Make a PATCH request
+     *
+     * @param $path
+     * @param null $accessScope
+     * @param null $data
+     * @return array
+     * @throws AuthorizationException
+     * @throws RemoteServiceUnavailableException
+     */
+    public function patchRequest(
+        $path,
+        $accessScope = null,
+        $data = null
+    ): array {
+        if ($data !== null) {
+            $data = $this->jsonEncoder->serialize($data);
+        }
+
+        $accessToken = $this->getAccessToken(
+            $accessScope
+        );
+
+        /** @var Curl $curl */
+        $curl = $this->curlFactory->create();
+
+        $curl->addHeader('Authorization', 'Bearer ' . $accessToken);
+        $curl->addHeader('Content-type', 'application/json');
+        $curl->addHeader('Expect:', ''); // Avoid HTTP 100 response from API
+
+        $url = $this->getApiUrl($path);
+
+        try {
+            $curl->patch(
+                $url,
+                $data
+            );
+        } catch (\Exception $e) {
+            throw new RemoteServiceUnavailableException(
+                __(
+                    'Failed to send HTTP PATCH request: %1 - %2',
+                    $url,
+                    $e->getMessage()
+                )
+            );
+        }
+
+        if ($curl->getStatus() !== 200) {
+            throw new RemoteServiceUnavailableException(
+                __(
+                    'Got HTTP %1 response for PATCH request: %2 - %3',
+                    $curl->getStatus(),
+                    $url,
+                    $curl->getBody()
+                )
+            );
+        }
+
+        return (array) $this->jsonEncoder->unserialize($curl->getBody());
+    }
+
+    /**
+     * Retrieve API access token for a given scope
+     *
      * @param $scope
-     * @return mixed
+     * @return string
      * @throws AuthorizationException
      */
-    private function getAccessToken($scope)
+    private function getAccessToken($scope): string
     {
         if (!isset($this->accessTokens[$scope])) {
             $apiKey = $this->dataHelper->getApiKey();
@@ -142,6 +188,7 @@ class Api extends AbstractHelper
                 'scope' => $scope
             ];
 
+            /** @var Curl $curl */
             $curl = $this->curlFactory->create();
 
             $curl->setCredentials(
@@ -166,7 +213,7 @@ class Api extends AbstractHelper
             $response = $this->jsonEncoder->unserialize($curl->getBody());
 
             // Check the token is valid for requested scope
-            if ($this->verifyAccessToken($response, $scope) == false) {
+            if ($this->verifyAccessToken($response, $scope) === false) {
                 throw new AuthorizationException(
                     __(
                         'Failed to retrieve valid access token for scope - %1',
@@ -183,13 +230,14 @@ class Api extends AbstractHelper
 
     /**
      * Confirm access token and valid scope is present.
-     * Note this is only implemented for single scope currently.
+     *
+     * Note, this assumes multiple scopes are retuned in the same order they were requested
      *
      * @param $response
      * @param bool $scope
      * @return bool
      */
-    private function verifyAccessToken($response, $scope = false)
+    private function verifyAccessToken($response, $scope = false): bool
     {
         if (!isset($response['access_token'])) {
             return false;
@@ -203,10 +251,12 @@ class Api extends AbstractHelper
     }
 
     /**
+     * Product full API URL (test or live) from resource path
+     *
      * @param $path
      * @return string
      */
-    private function getApiUrl($path)
+    private function getApiUrl($path): string
     {
         $basePath = ($this->dataHelper->getApiMode() == ApiMode::API_MODE_TEST) ?
             $this->dataHelper->getTestApiUrl() :

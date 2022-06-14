@@ -3,25 +3,22 @@ declare(strict_types=1);
 
 namespace Doddle\Returns\Cron;
 
-use Psr\Log\LoggerInterface as PsrLoggerInterface;
-use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
-use Magento\Sales\Model\ResourceModel\Order\Collection as OrderCollection;
-use Magento\Sales\Api\Data\OrderInterface;
-use Magento\Sales\Api\Data\OrderAddressInterface;
-use Magento\Sales\Api\Data\OrderItemInterface;
-use Magento\Catalog\Helper\Image as imageHelper;
-use Doddle\Returns\Helper\Data as DataHelper;
-use Doddle\Returns\Helper\Api as ApiHelper;
-use Doddle\Returns\Model\ResourceModel\OrderQueue\CollectionFactory as OrderQueueCollectionFactory;
-use Doddle\Returns\Model\ResourceModel\OrderQueue\Collection as OrderQueueCollection;
-use Doddle\Returns\Api\OrderQueueRepositoryInterface;
 use Doddle\Returns\Api\Data\OrderQueueInterface;
+use Doddle\Returns\Api\OrderQueueRepositoryInterface;
+use Doddle\Returns\Helper\Api as ApiHelper;
+use Doddle\Returns\Helper\Data as DataHelper;
+use Doddle\Returns\Model\ResourceModel\OrderQueue\Collection as OrderQueueCollection;
+use Doddle\Returns\Model\ResourceModel\OrderQueue\CollectionFactory as OrderQueueCollectionFactory;
+use Doddle\Returns\Service\Api\Purchase as PurchaseApiService;
+use Magento\Sales\Api\Data\OrderInterface;
+use Magento\Sales\Model\Order;
+use Magento\Sales\Model\ResourceModel\Order\Collection as OrderCollection;
+use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
+use Psr\Log\LoggerInterface as PsrLoggerInterface;
 
 class OrderSyncQueue
 {
-    /**
-     * @var PsrLoggerInterface
-     */
+    /** @var PsrLoggerInterface */
     private $logger;
 
     /** @var DataHelper */
@@ -29,9 +26,6 @@ class OrderSyncQueue
 
     /** @var ApiHelper */
     private $apiHelper;
-
-    /** @var imageHelper */
-    private $imageHelper;
 
     /** @var OrderQueueCollectionFactory */
     private $orderQueueCollectionFactory;
@@ -42,45 +36,48 @@ class OrderSyncQueue
     /** @var OrderQueueRepositoryInterface */
     private $orderQueueRepository;
 
+    /** @var PurchaseApiService */
+    private $purchaseApiService;
+
     /**
      * @param PsrLoggerInterface $logger
      * @param DataHelper $dataHelper
      * @param ApiHelper $apiHelper
-     * @param imageHelper $imageHelper
      * @param OrderQueueCollectionFactory $orderQueueCollectionFactory
      * @param OrderCollectionFactory $orderCollectionFactory
      * @param OrderQueueRepositoryInterface $orderQueueRepository
+     * @param PurchaseApiService $purchaseApiService
      */
     public function __construct(
         PsrLoggerInterface $logger,
         DataHelper $dataHelper,
         ApiHelper $apiHelper,
-        ImageHelper $imageHelper,
         OrderQueueCollectionFactory $orderQueueCollectionFactory,
         OrderCollectionFactory $orderCollectionFactory,
-        OrderQueueRepositoryInterface $orderQueueRepository
+        OrderQueueRepositoryInterface $orderQueueRepository,
+        PurchaseApiService $purchaseApiService
     ) {
         $this->logger = $logger;
         $this->dataHelper = $dataHelper;
         $this->apiHelper = $apiHelper;
-        $this->imageHelper = $imageHelper;
         $this->orderQueueCollectionFactory = $orderQueueCollectionFactory;
         $this->orderCollectionFactory = $orderCollectionFactory;
         $this->orderQueueRepository = $orderQueueRepository;
+        $this->purchaseApiService = $purchaseApiService;
     }
 
     /**
      * Cron function to process pending orders in queue, first in first out limited by configured batch size
      */
-    public function processPendingOrders()
+    public function processPendingOrders(): void
     {
         /** @var OrderQueueCollection $pendingOrders */
         $pendingOrders = $this->orderQueueCollectionFactory->create();
 
-        $pendingOrders->addFieldToFilter('status', OrderQueueInterface::STATUS_PENDING)
+        $pendingOrders->addFieldToFilter(OrderQueueInterface::STATUS, OrderQueueInterface::STATUS_PENDING)
             ->setPageSize($this->dataHelper->getOrderSyncBatchSize())
             ->setCurPage(1)
-            ->setOrder('created_at', OrderQueueCollection::SORT_ORDER_ASC);
+            ->setOrder(OrderQueueInterface::CREATED_AT, OrderQueueCollection::SORT_ORDER_ASC);
 
         $this->pushOrders($pendingOrders);
     }
@@ -88,32 +85,83 @@ class OrderSyncQueue
     /**
      * Cron function to retry failed orders in queue, first in first out limited by configured batch size
      */
-    public function retryFailedOrders()
+    public function retryFailedOrders(): void
     {
         $maxFails = $this->dataHelper->getOrderSyncMaxFails();
 
         /** @var OrderQueueCollection $failedOrders */
         $failedOrders = $this->orderQueueCollectionFactory->create();
 
-        $failedOrders->addFieldToFilter('status', OrderQueueInterface::STATUS_FAILED)
+        $failedOrders->addFieldToFilter(OrderQueueInterface::STATUS, OrderQueueInterface::STATUS_FAILED)
             ->setPageSize($this->dataHelper->getOrderSyncBatchSize())
             ->setCurPage(1)
-            ->setOrder('created_at', OrderQueueCollection::SORT_ORDER_ASC);
+            ->setOrder(OrderQueueInterface::FAIL_COUNT, OrderQueueCollection::SORT_ORDER_ASC)
+            ->setOrder(OrderQueueInterface::CREATED_AT, OrderQueueCollection::SORT_ORDER_ASC);
 
-        // Allow for infinate retries where max tries config is set to 0
+        // Allow for infinite retries where max tries config is set to 0
         if ($maxFails > 0) {
-            $failedOrders->addFieldToFilter('fail_count', ['lteq' => $this->dataHelper->getOrderSyncMaxFails()]);
+            $failedOrders->addFieldToFilter('fail_count', ['lteq' => $maxFails]);
         }
 
         $this->pushOrders($failedOrders);
     }
 
     /**
+     * Cron function to process cancelling orders in queue, first in first out limited by configured batch size
+     */
+    public function processCancelOrders(): void
+    {
+        $maxFails = $this->dataHelper->getOrderSyncMaxFails();
+
+        /** @var OrderQueueCollection $cancelOrders */
+        $cancelOrders = $this->orderQueueCollectionFactory->create();
+
+        $cancelOrders->addFieldToFilter(OrderQueueInterface::STATUS, OrderQueueInterface::STATUS_CANCEL)
+            ->setPageSize($this->dataHelper->getOrderSyncBatchSize())
+            ->setCurPage(1)
+            ->setOrder(OrderQueueInterface::FAIL_COUNT, OrderQueueCollection::SORT_ORDER_ASC)
+            ->setOrder(OrderQueueInterface::CREATED_AT, OrderQueueCollection::SORT_ORDER_ASC);
+
+        // Allow for infinite retries where max tries config is set to 0
+        if ($maxFails > 0) {
+            $cancelOrders->addFieldToFilter('fail_count', ['lteq' => $maxFails]);
+        }
+
+        $this->cancelOrders($cancelOrders);
+    }
+
+    /**
+     * Cron function to process updating orders in queue, first in first out limited by configured batch size
+     */
+    public function processUpdateOrders(): void
+    {
+        $maxFails = $this->dataHelper->getOrderSyncMaxFails();
+
+        /** @var OrderQueueCollection $cancelOrders */
+        $updateOrders = $this->orderQueueCollectionFactory->create();
+
+        $updateOrders->addFieldToFilter(OrderQueueInterface::STATUS, OrderQueueInterface::STATUS_UPDATE)
+            ->setPageSize($this->dataHelper->getOrderSyncBatchSize())
+            ->setCurPage(1)
+            ->setOrder(OrderQueueInterface::FAIL_COUNT, OrderQueueCollection::SORT_ORDER_ASC)
+            ->setOrder(OrderQueueInterface::CREATED_AT, OrderQueueCollection::SORT_ORDER_ASC);
+
+        // Allow for infinite retries where max tries config is set to 0
+        if ($maxFails > 0) {
+            $updateOrders->addFieldToFilter('fail_count', ['lteq' => $maxFails]);
+        }
+
+        $this->updateOrders($updateOrders);
+    }
+
+    /**
+     * Push orders cron function
+     *
      * @param OrderQueueCollection $orderQueue
      */
-    private function pushOrders(OrderQueueCollection $orderQueue)
+    private function pushOrders(OrderQueueCollection $orderQueue): void
     {
-        $orderIds = $orderQueue->getColumnValues('order_id');
+        $orderIds = $orderQueue->getColumnValues(OrderQueueInterface::ORDER_ID);
 
         /** @var OrderCollection $orderCollection */
         $orderCollection = $this->orderCollectionFactory->create();
@@ -123,22 +171,25 @@ class OrderSyncQueue
             ['in' => $orderIds]
         );
 
+        $companyId = $this->dataHelper->getCompanyId();
+
         /** @var OrderQueueInterface $queuedOrder */
         foreach ($orderQueue as $queuedOrder) {
             $order = $orderCollection->getItemById($queuedOrder->getOrderId());
 
-            // Only push order if sync store config is enabled
-            if ($this->dataHelper->getOrderSyncEnabled((int) $order->getStoreId()) == false) {
+            if ($this->validateOrderForPush($order) === false) {
+                // Skip any orders deemed invalid for push
                 continue;
             }
 
-            $orderData = $this->formatOrderForApi($order);
-
-            // Ensure failed response logic is followed if error occurs contacting Doddle API
-            $response = false;
+            $purchase = $this->purchaseApiService->getPurchaseData($order);
 
             try {
-                $response = $this->apiHelper->sendOrder($orderData);
+                $response = $this->apiHelper->postRequest(
+                    PurchaseApiService::API_PATH,
+                    sprintf('%s organisation_%s', PurchaseApiService::API_SCOPE, $companyId),
+                    $purchase
+                );
             } catch (\Exception $e) {
                 $this->logger->error(
                     sprintf(
@@ -149,8 +200,7 @@ class OrderSyncQueue
                 );
             }
 
-            if ($response !== false) {
-                $queuedOrder->setDoddleOrderId($response);
+            if (isset($response['resource'])) {
                 $queuedOrder->setStatus(OrderQueueInterface::STATUS_SYNCHED);
             } else {
                 $queuedOrder->setStatus(OrderQueueInterface::STATUS_FAILED);
@@ -162,125 +212,180 @@ class OrderSyncQueue
     }
 
     /**
-     * @param OrderInterface $order
-     * @return array
+     * Cancel orders cron function
+     *
+     * @param OrderQueueCollection $orderQueue
      */
-    private function formatOrderForApi(OrderInterface $order)
+    private function cancelOrders(OrderQueueCollection $orderQueue): void
     {
-        $orderData = [
-            "companyId" => $this->dataHelper->getCompanyId(),
-            "externalOrderId" => $order->getIncrementId(),
-            "orderType" => "EXTERNAL",
-            "externalOrderData" => [
-                "purchaseDate" => date('d-m-Y', strtotime($order->getCreatedAt()))
-            ],
-            "customer" => [
-                "email" => $order->getCustomerEmail(),
-                "name" => $this->getCustomerName($order)
-            ]
-        ];
+        $orderIds = $orderQueue->getColumnValues(OrderQueueInterface::ORDER_ID);
 
-        // Add telephone number if set
-        if ($order->getBillingAddress()->getTelephone()) {
-            $orderData["customer"]["mobileNumber"] = $order->getBillingAddress()->getTelephone();
-        }
+        /** @var OrderCollection $orderCollection */
+        $orderCollection = $this->orderCollectionFactory->create();
 
-        // Add delivery address for physical orders only
-        if (!$order->getIsVirtual()) {
-            $orderData['externalOrderData']['deliveryAddress'] = $this->formatShippingAddress(
-                $order->getShippingAddress()
+        $orderCollection->addAttributeToFilter(
+            $orderCollection->getResource()->getIdFieldName(),
+            ['in' => $orderIds]
+        );
+
+        $companyId = $this->dataHelper->getCompanyId();
+
+        /** @var OrderQueueInterface $queuedOrder */
+        foreach ($orderQueue as $queuedOrder) {
+            $order = $orderCollection->getItemById($queuedOrder->getOrderId());
+
+            if ($this->validateOrderForCancel($order) === false) {
+                // Skip any orders deemed invalid for cancel
+                continue;
+            }
+
+            $apiPath = sprintf(
+                '%scompany/%s/externalOrderId/%s/cancel?email=%s',
+                PurchaseApiService::API_PATH,
+                $companyId,
+                $order->getIncrementId(),
+                $order->getCustomerEmail()
             );
-        }
 
-        /** @var OrderItemInterface $orderLine */
-        foreach ($order->getAllVisibleItems() as $orderLine) {
-            $orderLineData = [
-                "package" => [
-                    "labelValue" => sprintf('%s-%s', $order->getIncrementId(), $orderLine->getId()),
-                    "weight" => (float) $orderLine->getRowWeight()
-                ],
-                "product" => [
-                    "description" => $orderLine->getName(),
-                    "sku" => $orderLine->getSku(),
-                    "price" => (float) $orderLine->getPrice(),
-                    "imageUrl" => $this->getProductImageUrl($orderLine->getProduct()),
-                    "quantity" => (int) $orderLine->getQtyOrdered(),
-                    // "isNotReturnable" => (bool) $orderLine->getProduct()->getData("doddle_returns_excluded")
-                ],
-                "sourceLocation" => [],
-                "destinationLocation" => [
-                    "locationType" => "external"
-                ],
-                "fulfilmentMethod" => "NONE"
-            ];
-
-            // Add size attribute if available
-            if ($orderLine->getProduct()->getSize()) {
-                $orderLineData['product']['size'] = $orderLine->getProduct()->getSize();
+            try {
+                $response = $this->apiHelper->postRequest(
+                    $apiPath,
+                    sprintf('%s organisation_%s', PurchaseApiService::API_SCOPE, $companyId)
+                );
+            } catch (\Exception $e) {
+                $this->logger->error(
+                    sprintf(
+                        '(Cancel Magento Order ID: %s) %s',
+                        $queuedOrder->getOrderId(),
+                        $e->getMessage()
+                    )
+                );
             }
 
-            // Add colour attribute if available
-            if ($orderLine->getProduct()->getColor() || $orderLine->getProduct()->getColour()) {
-                $orderLineData['product']['colour'] = $orderLine->getProduct()->getColor() ?
-                    $orderLine->getProduct()->getColor() :
-                    $orderLine->getProduct()->getColour();
+            if (isset($response['resource']['orderCancelled']) && $response['resource']['orderCancelled'] == true) {
+                $queuedOrder->setStatus(OrderQueueInterface::STATUS_CANCELLED);
+            } else {
+                $queuedOrder->setFailCount($queuedOrder->getFailCount() + 1);
             }
 
-            $orderData['orderLines'][] = $orderLineData;
+            $this->orderQueueRepository->save($queuedOrder);
         }
-
-        return $orderData;
     }
 
     /**
+     * Update orders cron function
+     *
+     * @param OrderQueueCollection $orderQueue
+     */
+    private function updateOrders(OrderQueueCollection $orderQueue): void
+    {
+        $orderIds = $orderQueue->getColumnValues(OrderQueueInterface::ORDER_ID);
+
+        /** @var OrderCollection $orderCollection */
+        $orderCollection = $this->orderCollectionFactory->create();
+
+        $orderCollection->addAttributeToFilter(
+            $orderCollection->getResource()->getIdFieldName(),
+            ['in' => $orderIds]
+        );
+
+        $companyId = $this->dataHelper->getCompanyId();
+
+        /** @var OrderQueueInterface $queuedOrder */
+        foreach ($orderQueue as $queuedOrder) {
+            $order = $orderCollection->getItemById($queuedOrder->getOrderId());
+
+            if ($this->validateOrderForUpdate($order) === false) {
+                // Skip any orders deemed invalid for update
+                continue;
+            }
+
+            $apiPath = sprintf(
+                '%scompany/%s/externalOrderId/%s?email=%s',
+                PurchaseApiService::API_PATH,
+                $companyId,
+                $order->getIncrementId(),
+                $order->getCustomerEmail()
+            );
+
+            $purchaseUpdate = $this->purchaseApiService->getPurchaseUpdateData($order);
+
+            try {
+                $response = $this->apiHelper->patchRequest(
+                    $apiPath,
+                    sprintf('%s organisation_%s', PurchaseApiService::API_SCOPE, $companyId),
+                    $purchaseUpdate
+                );
+            } catch (\Exception $e) {
+                $this->logger->error(
+                    sprintf(
+                        '(Update Magento Order ID: %s) %s',
+                        $queuedOrder->getOrderId(),
+                        $e->getMessage()
+                    )
+                );
+            }
+
+            if (isset($response['resource'])) {
+                $queuedOrder->setStatus(OrderQueueInterface::STATUS_UPDATED);
+            } else {
+                $queuedOrder->setFailCount($queuedOrder->getFailCount() + 1);
+            }
+
+            $this->orderQueueRepository->save($queuedOrder);
+        }
+    }
+
+    /**
+     * Validate order to prevent invalid orders being pushed
+     *
      * @param OrderInterface $order
-     * @return string[]
+     * @return bool
      */
-    private function getCustomerName(OrderInterface $order)
+    private function validateOrderForPush(OrderInterface $order): bool
     {
-        $customerName = [
-            "firstName" => $order->getCustomerFirstname() ? $order->getCustomerFirstname() : "Guest"
-        ];
-
-        if ($order->getCustomerLastname()) {
-            $customerName["lastName"] = $order->getCustomerLastname();
+        // Don't push cancelled orders
+        if ($order->getState() == Order::STATE_CANCELED) {
+            return false;
         }
 
-        return $customerName;
+        // Only push order if sync store config is enabled
+        if ($this->dataHelper->getOrderSyncEnabled((int) $order->getStoreId()) == false) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
-     * @param $product
-     * @return mixed
+     * Validate order to prevent invalid orders being updated
+     *
+     * @param OrderInterface $order
+     * @return bool
      */
-    private function getProductImageUrl($product)
+    private function validateOrderForUpdate(OrderInterface $order): bool
     {
-        return $product->getMediaConfig()->getMediaUrl($product->getImage());
+        return $this->validateOrderForPush($order);
     }
 
     /**
-     * @param OrderAddressInterface $shippingAddress
-     * @return array
+     * Validate order to prevent invalid orders being cancelled
+     *
+     * @param OrderInterface $order
+     * @return bool
      */
-    private function formatShippingAddress(OrderAddressInterface $shippingAddress)
+    private function validateOrderForCancel(OrderInterface $order): bool
     {
-        $formattedAddress = [
-            "town" => $shippingAddress->getCity(),
-            "postcode" => $shippingAddress->getPostcode() ? $shippingAddress->getPostcode() : 'n/a',
-            "country" => $shippingAddress->getCountryId()
-        ];
-
-        // Add area to address only if set in Magento order
-        if ($shippingAddress->getRegion()) {
-            $formattedAddress["area"] = $shippingAddress->getRegion();
+        // Only push cancelled orders
+        if ($order->getState() != Order::STATE_CANCELED) {
+            return false;
         }
 
-        foreach ($shippingAddress->getStreet() as $index => $streetLine) {
-            if ($streetLine) {
-                $formattedAddress["line" . ($index + 1)] = $streetLine;
-            }
+        // Only push order if sync store config is enabled
+        if ($this->dataHelper->getOrderSyncEnabled((int) $order->getStoreId()) == false) {
+            return false;
         }
 
-        return $formattedAddress;
+        return true;
     }
 }

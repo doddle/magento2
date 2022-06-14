@@ -9,13 +9,16 @@ use Doddle\Returns\Model\ResourceModel\OrderQueue as OrderQueueResource;
 
 class OrderQueue extends AbstractModel implements OrderQueueInterface
 {
-    protected function _construct()
+    /**
+     * @inheritDoc
+     */
+    protected function _construct(): void
     {
         $this->_init(OrderQueueResource::class);
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function getId()
     {
@@ -23,7 +26,7 @@ class OrderQueue extends AbstractModel implements OrderQueueInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function setId($id)
     {
@@ -31,7 +34,7 @@ class OrderQueue extends AbstractModel implements OrderQueueInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function getOrderId()
     {
@@ -39,7 +42,7 @@ class OrderQueue extends AbstractModel implements OrderQueueInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function setOrderId($orderId)
     {
@@ -47,7 +50,7 @@ class OrderQueue extends AbstractModel implements OrderQueueInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function getStatus()
     {
@@ -55,7 +58,7 @@ class OrderQueue extends AbstractModel implements OrderQueueInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function setStatus($status)
     {
@@ -63,7 +66,7 @@ class OrderQueue extends AbstractModel implements OrderQueueInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function getFailCount()
     {
@@ -71,7 +74,7 @@ class OrderQueue extends AbstractModel implements OrderQueueInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function setFailCount($failCount)
     {
@@ -79,7 +82,7 @@ class OrderQueue extends AbstractModel implements OrderQueueInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function getDoddleOrderId()
     {
@@ -87,7 +90,7 @@ class OrderQueue extends AbstractModel implements OrderQueueInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function setDoddleOrderId($doddleOrderId)
     {
@@ -95,7 +98,7 @@ class OrderQueue extends AbstractModel implements OrderQueueInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function getCreatedAt()
     {
@@ -103,7 +106,7 @@ class OrderQueue extends AbstractModel implements OrderQueueInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function setCreatedAt($createdAt)
     {
@@ -111,7 +114,7 @@ class OrderQueue extends AbstractModel implements OrderQueueInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function getUpdatedAt()
     {
@@ -119,7 +122,7 @@ class OrderQueue extends AbstractModel implements OrderQueueInterface
     }
 
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function setUpdatedAt($updatedAt)
     {

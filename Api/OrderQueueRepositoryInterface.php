@@ -6,7 +6,9 @@ use Doddle\Returns\Api\Data\OrderQueueInterface;
 interface OrderQueueRepositoryInterface
 {
     /**
-     * @param \Doddle\Returns\Api\Data\OrderQueueInterface
+     * Save order queue entity
+     *
+     * @param \Doddle\Returns\Api\Data\OrderQueueInterface $orderQueue
      * @return \Doddle\Returns\Api\Data\OrderQueueInterface
      */
     public function save(OrderQueueInterface $orderQueue);

@@ -10,19 +10,20 @@ use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Helper\Image as ImageHelper;
 use Magento\Catalog\Model\ResourceModel\Category\Collection as CategoryCollection;
 use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCollectionFactory;
-use Magento\Framework\Exception\LocalizedException;
+use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Pricing\PriceCurrencyInterface;
 use Magento\Framework\UrlInterface;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Sales\Api\Data\OrderItemInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
 
 class Purchase
 {
     public const API_PATH = '/v1/purchases/';
     public const API_SCOPE = 'purchases:write';
+    public const MAX_NAME_LENGTH = 60; // Max length for product name in Purchases API
+    public const MAX_SKU_LENGTH = 255; // Max length for SKU in Purchases API
 
     /** @var DataHelper */
     private $dataHelper;
@@ -139,11 +140,11 @@ class Purchase
 
             $orderLineData = [
                 'orderLineId' => sprintf('%s%s', $order->getIncrementId(), $orderLine->getItemId()),
-                'productName' => $this->validate->string($orderLine->getName()),
+                'productName' => $this->validate->string(substr($orderLine->getName(), 0, self::MAX_NAME_LENGTH)),
                 'productUrl' => $this->getProductUrl($product),
                 'isNotReturnable' => (bool) $product->getData('doddle_returns_excluded'),
                 'quantity' => (float) $quantity,
-                'sku' => substr($orderLine->getSku(), 0, 255) // 255 is max length for SKU in Purchases API
+                'sku' => substr($orderLine->getSku(), 0, self::MAX_SKU_LENGTH)
             ];
 
             if ($orderLine->getPrice() !== null) {

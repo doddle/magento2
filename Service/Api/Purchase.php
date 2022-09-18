@@ -432,7 +432,7 @@ class Purchase
     }
 
     /**
-     * Compile customer data
+     * Compile customer data, using order recipient name and telephone
      *
      * @param OrderInterface $order
      * @return array
@@ -443,16 +443,20 @@ class Purchase
             'email' => $this->validate->string($order->getCustomerEmail())
         ];
 
-        $firstName = $order->getCustomerFirstname() ? $order->getCustomerFirstname() : 'Guest';
+        $shippingAddress = $order->getShippingAddress();
+        $firstName = $shippingAddress->getFirstname();
+        $lastName = $shippingAddress->getLastname();
+        $telephone = $shippingAddress->getTelephone();
+
         $customer['name']['firstName'] = $this->validate->string($firstName);
 
-        if ($order->getCustomerLastname()) {
-            $customer['name']['lastName'] = $order->getCustomerLastname();
+        // Add last name and telephone number if available
+        if ($lastName) {
+            $customer['name']['lastName'] = $lastName;
         }
 
-        // Add telephone number if set
-        if ($order->getBillingAddress()->getTelephone()) {
-            $customer['mobileNumber'] = $order->getBillingAddress()->getTelephone();
+        if ($telephone) {
+            $customer['mobileNumber'] = $telephone;
         }
 
         return $customer;
